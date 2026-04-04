@@ -1,9 +1,4 @@
-# ==========================================
-# SCRIPT 1: THE CLOUD BUILD (GITHUB ACTIONS)
-# ==========================================
-# FILE PATH: .github/workflows/build.yml
-# ==========================================
-name: Build Optimized UTM
+name: Build Steam Launcher IPA
 on: workflow_dispatch
 jobs:
   build:
@@ -11,17 +6,18 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-      - name: Setup Xcode
-        uses: maxim-lobanov/setup-xcode@v1
-        with:
-          xcode-version: 'latest'
-      - name: Build IPA
+      - name: Inject Steam & UI
         run: |
-          # Optimization for M1 and A14/A16
+          # Creates the folder for your Steam credentials
+          mkdir -p ./Resources/SteamData
+          # Downloads the lightweight Steam command-line tool
+          curl -sqL "https://steamcdn-a.akamaihd.net/client/installer/steamcmd_linux.tar.gz" | tar zxvf - -C ./Resources/SteamData
+      - name: Compile Native IPA
+        run: |
           xcodebuild -project UTM.xcodeproj -scheme "UTM iOS" -configuration Release -sdk iphoneos archive -archivePath ./UTM.xcarchive
           xcodebuild -exportArchive -archivePath ./UTM.xcarchive -exportOptionsPlist ./ExportOptions.plist -exportPath ./build
       - name: Upload
         uses: actions/upload-artifact@v4
         with:
-          name: UTM-Optimized
+          name: Steam-Launcher-IPA
           path: ./build/*.ipa
