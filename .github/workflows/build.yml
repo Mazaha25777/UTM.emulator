@@ -16,6 +16,9 @@ jobs:
           curl -sqL "https://steamcdn-a.akamaihd.net/client/installer/steamcmd_osx.tar.gz" | tar zxvf - -C ./Platform/iOS/Resources/SteamData
           chmod +x ./Platform/iOS/Resources/SteamData/steamcmd.sh
 
+      - name: List Available Schemes
+        run: xcodebuild -project UTM.xcodeproj -list
+
       - name: Build Raw App Binary
         run: |
           # This command builds the app as a "Development" version, which 
