@@ -1,23 +1,59 @@
+# ==========================================
+# SCRIPT: FINAL "NO-SIGN" BUILD ENGINE
+# ==========================================
+# FILE PATH: .github/workflows/build.yml
+# ==========================================
+
 name: Build Steam Launcher IPA
 on: workflow_dispatch
+
 jobs:
   build:
     runs-on: macos-latest
     steps:
-      - name: Checkout
+      - name: Checkout Code
         uses: actions/checkout@v4
-      - name: Inject Steam & UI
+
+      - name: Inject SteamCMD (The Brain)
         run: |
-          # Creates the folder for your Steam credentials
-          mkdir -p ./Resources/SteamData
-          # Downloads the lightweight Steam command-line tool
-          curl -sqL "https://steamcdn-a.akamaihd.net/client/installer/steamcmd_linux.tar.gz" | tar zxvf - -C ./Resources/SteamData
-      - name: Compile Native IPA
+          # Create internal folder
+          mkdir -p ./Platform/iOS/Resources/SteamData
+          
+          # Download Steam engine (OSX version for iPad compatibility)
+          curl -sqL "https://steamcdn-a.akamaihd.net/client/installer/steamcmd_osx.tar.gz" | tar zxvf - -C ./Platform/iOS/Resources/SteamData
+          
+          # Grant execution permissions
+          chmod +x ./Platform/iOS/Resources/SteamData/steamcmd.sh
+
+      - name: Compile Unsigned App
         run: |
-          xcodebuild -project UTM.xcodeproj -scheme "UTM iOS" -configuration Release -sdk iphoneos archive -archivePath ./UTM.xcarchive
-          xcodebuild -exportArchive -archivePath ./UTM.xcarchive -exportOptionsPlist ./ExportOptions.plist -exportPath ./build
-      - name: Upload
+          # This command tells Xcode to build the app BUT skip the "Handshake" with Apple.
+          # This avoids Error 65.
+          xcodebuild archive \
+            -project UTM.xcodeproj \
+            -scheme "UTM iOS" \
+            -sdk iphoneos \
+            -configuration Release \
+            -archivePath ./build/UTM.xcarchive \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_ENTITLEMENTS="" \
+            AD_HOC_CODE_SIGNING_ALLOWED=YES
+
+      - name: Package for Sideloadly
+        run: |
+          # Sideloadly needs a folder named "Payload" inside a zip file to recognize it as an IPA.
+          mkdir -p ./dist/Payload
+          
+          # Copy the compiled app into the Payload folder
+          cp -r ./build/UTM.xcarchive/Products/Applications/UTM.app ./dist/Payload/
+          
+          # Zip it up and name it SteamLauncher.ipa
+          cd dist
+          zip -r ../SteamLauncher.ipa Payload
+
+      - name: Upload Finished Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: Steam-Launcher-IPA
-          path: ./build/*.ipa
+          name: Steam-Launcher-Unsigned
+          path: SteamLauncher.ipa
