@@ -22,7 +22,7 @@ jobs:
           # doesn't require the strict certificates that cause Error 65.
           xcodebuild build \
             -project UTM.xcodeproj \
-            -scheme "UTM iOS" \
+            -scheme "UTM" \
             -configuration Release \
             -sdk iphoneos \
             -derivedDataPath ./DerivedData \
