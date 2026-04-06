@@ -21,11 +21,21 @@ jobs:
 
       - name: Build Raw App Binary
         run: |
+          # Discover available schemes dynamically
+          SCHEME=$(xcodebuild -project UTM.xcodeproj -list | grep -A 100 "Schemes:" | grep -v "Schemes:" | awk '{print $1}' | head -1)
+          
+          if [ -z "$SCHEME" ]; then
+            echo "Error: No schemes found in UTM.xcodeproj"
+            exit 1
+          fi
+          
+          echo "Using scheme: $SCHEME"
+          
           # This command builds the app as a "Development" version, which 
           # doesn't require the strict certificates that cause Error 65.
           xcodebuild build \
             -project UTM.xcodeproj \
-            -scheme "UTM" \
+            -scheme "$SCHEME" \
             -configuration Release \
             -sdk iphoneos \
             -derivedDataPath ./DerivedData \
@@ -38,7 +48,7 @@ jobs:
         run: |
           # Locate the built .app and put it in a Payload folder
           mkdir -p ./Payload
-          APP_PATH=$(find ./DerivedData -name "UTM.app" -type d | head -n 1)
+          APP_PATH=$(find ./DerivedData -name "*.app" -type d | head -n 1)
           cp -r "$APP_PATH" ./Payload/
           
           # Create the final IPA
